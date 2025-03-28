@@ -1,0 +1,2254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoMinApp - Analyse Variographique</title>
+    <script src="https://cdn.plot.ly/plotly-2.20.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --primary-light: #3b82f6;
+            --secondary: #64748b;
+            --light: #f8fafc;
+            --dark: #0f172a;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #06b6d4;
+            --border: #e2e8f0;
+            --background: #f1f5f9;
+            --card: #ffffff;
+            --text: #334155;
+            --text-light: #64748b;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 
+                        'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--card);
+            color: var(--text);
+            padding: 18px 0;
+            margin-bottom: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        header .title-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        header .app-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 8px;
+            font-size: 20px;
+        }
+        
+        h1, h2, h3, h4 {
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+        
+        h2 {
+            font-size: 1.4rem;
+            margin-bottom: 16px;
+        }
+        
+        h3 {
+            font-size: 1.2rem;
+            margin-bottom: 14px;
+            color: var(--primary-dark);
+        }
+        
+        h4 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+        
+        @media (min-width: 992px) {
+            .dashboard {
+                grid-template-columns: 350px 1fr;
+            }
+        }
+        
+        .panel {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        
+        .section-title i {
+            color: var(--primary);
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: var(--text);
+            background-color: var(--light);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: background-color 0.2s, transform 0.1s;
+            white-space: nowrap;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #475569;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+        }
+        
+        .btn-success:hover {
+            background-color: #059669;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
+        }
+        
+        .btn-warning:hover {
+            background-color: #d97706;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-group.full-width {
+            width: 100%;
+        }
+        
+        .btn-group.full-width .btn {
+            flex: 1;
+        }
+        
+        .visualization-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 2px;
+            background-color: var(--background);
+            border-radius: 10px;
+            padding: 4px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 18px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px 15px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            font-weight: 500;
+            font-size: 0.95rem;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .tab i {
+            font-size: 1rem;
+        }
+        
+        .tab.active {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .plot-container {
+            height: 500px;
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .model-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .range-container {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .range-value {
+            text-align: center;
+            font-weight: 600;
+            margin-top: 6px;
+            color: var(--primary);
+        }
+        
+        .data-preview {
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            background-color: var(--light);
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.85rem;
+        }
+        
+        .log-container {
+            margin-top: 16px;
+            padding: 12px;
+            background-color: var(--light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            max-height: 120px;
+            overflow-y: auto;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.85rem;
+        }
+        
+        .model-type-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .model-btn {
+            text-align: center;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .model-btn.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .stat-box {
+            background-color: var(--light);
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: transform 0.2s;
+        }
+        
+        .stat-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+        
+        .filter-panel {
+            background-color: var(--light);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+        
+        .filter-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .filter-item {
+            flex: 1;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 16px;
+        }
+        
+        .filter-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background-color: var(--primary-light);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+        
+        .filter-tag .remove {
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        
+        .filter-tag .remove:hover {
+            opacity: 1;
+        }
+        
+        .active-filters {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        
+        .divider {
+            height: 1px;
+            width: 100%;
+            background-color: var(--border);
+            margin: 20px 0;
+        }
+        
+        .toggle-control {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .toggle-control label {
+            margin-bottom: 0;
+            margin-left: 8px;
+        }
+        
+        .info-tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 4px;
+            color: var(--primary-light);
+            cursor: help;
+        }
+        
+        .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--dark);
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .info-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .domain-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .domain-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .domain-item:last-child {
+            border-bottom: none;
+        }
+        
+        .domain-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+        
+        .domain-checkbox {
+            margin-right: 10px;
+        }
+        
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-light);
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            color: var(--primary-light);
+            opacity: 0.7;
+        }
+        
+        .empty-state p {
+            margin-bottom: 16px;
+        }
+        
+        @media (max-width: 768px) {
+            .model-controls {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .stats-panel {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .filter-row {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .tab i {
+                margin-right: 0;
+            }
+            
+            .tab span {
+                display: none;
+            }
+        }
+        
+        /* Switch toggle */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 38px;
+            height: 20px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+        
+        input:focus + .slider {
+            box-shadow: 0 0 1px var(--primary);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(18px);
+        }
+        
+        /* Coloration des points en 3D selon les domaines */
+        .color-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+        }
+        
+        .color-square {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="title-container">
+                <div class="app-icon">
+                    <i class="fas fa-cube"></i>
+                </div>
+                <h1>GeoMinApp - Analyse Variographique</h1>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="dashboard">
+            <div class="control-panel panel">
+                <div class="section-title">
+                    <i class="fas fa-file-import"></i>
+                    <h3>Importation des données</h3>
+                </div>
+                
+                <div class="form-group">
+                    <label for="file-input">Fichier de données (.csv)</label>
+                    <input type="file" id="file-input" accept=".csv">
+                </div>
+                
+                <div id="data-preview" class="data-preview">
+                    <div class="empty-state">
+                        <i class="fas fa-table"></i>
+                        <p>Aucune donnée chargée.</p>
+                        <button class="btn btn-sm btn-secondary">
+                            <i class="fas fa-upload"></i> Charger un exemple
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="section-title">
+                    <i class="fas fa-columns"></i>
+                    <h3>Configuration des données</h3>
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-group">
+                        <label for="x-column">Colonne X</label>
+                        <select id="x-column" disabled>
+                            <option value="">Chargez un fichier</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="y-column">Colonne Y</label>
+                        <select id="y-column" disabled>
+                            <option value="">Chargez un fichier</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="z-column">Colonne Z</label>
+                        <select id="z-column" disabled>
+                            <option value="">Chargez un fichier</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="value-column">Colonne Valeur</label>
+                        <select id="value-column" disabled>
+                            <option value="">Chargez un fichier</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="domain-column">Colonne Domaine/Catégorie (optionnel)</label>
+                        <select id="domain-column" disabled>
+                            <option value="">Aucune</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="domain-filters" style="display: none;">
+                    <div class="divider"></div>
+                    
+                    <div class="section-title">
+                        <i class="fas fa-filter"></i>
+                        <h3>Filtrage par domaine</h3>
+                    </div>
+                    
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox" id="show-all-domains" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <label for="show-all-domains">Afficher tous les domaines</label>
+                    </div>
+                    
+                    <div id="domain-list" class="domain-list">
+                        <!-- Sera rempli dynamiquement -->
+                    </div>
+                    
+                    <div class="btn-group full-width">
+                        <button id="select-all-btn" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-check-square"></i> Tout sélectionner
+                        </button>
+                        <button id="clear-all-btn" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-square"></i> Tout désélectionner
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>Paramètres du variogramme</h3>
+                </div>
+                
+                <div class="form-group">
+                    <label for="lag-distance">
+                        Distance de lag (m)
+                        <span class="info-tooltip">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="tooltip-text">Pas de distance pour le calcul du variogramme</span>
+                        </span>
+                    </label>
+                    <input type="number" id="lag-distance" value="5" min="0.1" step="0.1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="num-lags">
+                        Nombre de lags
+                        <span class="info-tooltip">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="tooltip-text">Nombre d'intervalles de distance</span>
+                        </span>
+                    </label>
+                    <input type="number" id="num-lags" value="10" min="1" step="1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="azimuth">
+                        Azimut (degrés)
+                        <span class="info-tooltip">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="tooltip-text">Angle horizontal (0 = Nord, 90 = Est)</span>
+                        </span>
+                    </label>
+                    <input type="number" id="azimuth" value="0" min="0" max="360" step="15">
+                </div>
+                
+                <div class="form-group">
+                    <label for="dip">
+                        Plongement (degrés)
+                        <span class="info-tooltip">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="tooltip-text">Angle vertical (-90 = bas, 90 = haut)</span>
+                        </span>
+                    </label>
+                    <input type="number" id="dip" value="0" min="-90" max="90" step="15">
+                </div>
+                
+                <div class="form-group">
+                    <label for="tolerance">
+                        Tolérance angulaire (degrés)
+                        <span class="info-tooltip">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="tooltip-text">Tolérance pour les directions</span>
+                        </span>
+                    </label>
+                    <input type="number" id="tolerance" value="22.5" min="1" max="90" step="1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="bandwidth">
+                        Bande passante (m)
+                        <span class="info-tooltip">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="tooltip-text">Largeur de la bande de recherche perpendiculaire à la direction</span>
+                        </span>
+                    </label>
+                    <input type="number" id="bandwidth" value="10" min="1" step="1">
+                </div>
+                
+                <button id="calculate-btn" class="btn" disabled>
+                    <i class="fas fa-calculator"></i> Calculer le variogramme
+                </button>
+                
+                <div id="log" class="log-container">
+                    Prêt à charger les données...
+                </div>
+            </div>
+            
+            <div class="visualization-panel panel">
+                <div class="tabs">
+                    <div class="tab active" data-tab="data-tab">
+                        <i class="fas fa-cube"></i>
+                        <span>Données 3D</span>
+                    </div>
+                    <div class="tab" data-tab="filter-tab">
+                        <i class="fas fa-filter"></i>
+                        <span>Filtres</span>
+                    </div>
+                    <div class="tab" data-tab="variogram-tab">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Variogramme</span>
+                    </div>
+                    <div class="tab" data-tab="model-tab">
+                        <i class="fas fa-sliders-h"></i>
+                        <span>Modélisation</span>
+                    </div>
+                </div>
+                
+                <div id="data-tab" class="tab-content active">
+                    <div class="filter-panel">
+                        <h4>Filtres rapides</h4>
+                        <div class="filter-row">
+                            <div class="filter-item">
+                                <label for="min-value-filter">Valeur min.</label>
+                                <input type="number" id="min-value-filter" placeholder="Minimum">
+                            </div>
+                            <div class="filter-item">
+                                <label for="max-value-filter">Valeur max.</label>
+                                <input type="number" id="max-value-filter" placeholder="Maximum">
+                            </div>
+                            <div class="filter-item">
+                                <label for="quick-filter-button">&nbsp;</label>
+                                <button id="quick-filter-button" class="btn btn-secondary">
+                                    <i class="fas fa-filter"></i> Appliquer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="data-plot" class="plot-container"></div>
+                    
+                    <div id="domain-legend" class="color-legend" style="display: none;">
+                        <!-- Sera rempli dynamiquement -->
+                    </div>
+                    
+                    <div class="stats-panel">
+                        <div class="stat-box">
+                            <div class="stat-value" id="stat-count">-</div>
+                            <div class="stat-label">Échantillons</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="stat-min">-</div>
+                            <div class="stat-label">Minimum</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="stat-max">-</div>
+                            <div class="stat-label">Maximum</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="stat-mean">-</div>
+                            <div class="stat-label">Moyenne</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="stat-variance">-</div>
+                            <div class="stat-label">Variance</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="filter-tab" class="tab-content">
+                    <div class="filter-panel">
+                        <h4>Filtres avancés</h4>
+                        
+                        <div class="form-group">
+                            <label for="filter-column">Colonne</label>
+                            <select id="filter-column" disabled>
+                                <option value="">Chargez un fichier</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-row">
+                            <div class="filter-item">
+                                <label for="filter-operator">Opérateur</label>
+                                <select id="filter-operator">
+                                    <option value="eq">Égal à</option>
+                                    <option value="neq">Différent de</option>
+                                    <option value="gt">Supérieur à</option>
+                                    <option value="gte">Supérieur ou égal à</option>
+                                    <option value="lt">Inférieur à</option>
+                                    <option value="lte">Inférieur ou égal à</option>
+                                    <option value="between">Entre</option>
+                                    <option value="contains">Contient</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label for="filter-value">Valeur</label>
+                                <input type="text" id="filter-value" placeholder="Valeur">
+                            </div>
+                            <div class="filter-item" id="filter-value2-container" style="display: none;">
+                                <label for="filter-value2">Valeur 2</label>
+                                <input type="text" id="filter-value2" placeholder="Valeur 2">
+                            </div>
+                        </div>
+                        
+                        <div class="filter-buttons">
+                            <button id="add-filter-btn" class="btn btn-secondary">
+                                <i class="fas fa-plus"></i> Ajouter filtre
+                            </button>
+                            <button id="apply-filters-btn" class="btn btn-primary">
+                                <i class="fas fa-check"></i> Appliquer tous les filtres
+                            </button>
+                        </div>
+                        
+                        <div class="divider"></div>
+                        
+                        <h4>Filtres actifs</h4>
+                        <div id="active-filters" class="active-filters">
+                            <div class="empty-state" id="no-filters-message">
+                                <p>Aucun filtre actif</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="filtered-data-plot" class="plot-container"></div>
+                </div>
+                
+                <div id="variogram-tab" class="tab-content">
+                    <div class="filter-panel">
+                        <div class="filter-row">
+                            <div class="filter-item">
+                                <label for="variogram-direction">Direction prédéfinie</label>
+                                <select id="variogram-direction">
+                                    <option value="custom">Personnalisée</option>
+                                    <option value="x">Axe X</option>
+                                    <option value="y">Axe Y</option>
+                                    <option value="z">Axe Z</option>
+                                    <option value="xy45">XY 45°</option>
+                                    <option value="xy-45">XY -45°</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label for="normalized-variogram">Normalisation</label>
+                                <select id="normalized-variogram">
+                                    <option value="none">Non normalisé</option>
+                                    <option value="total">Normalisé / variance</option>
+                                    <option value="sill">Normalisé / palier</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label for="recalculate-btn">&nbsp;</label>
+                                <button id="recalculate-btn" class="btn btn-secondary">
+                                    <i class="fas fa-sync-alt"></i> Recalculer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="variogram-plot" class="plot-container"></div>
+                </div>
+                
+                <div id="model-tab" class="tab-content">
+                    <div class="filter-panel">
+                        <h4>Type de modèle</h4>
+                        <div class="model-type-container">
+                            <div class="model-btn active" data-model="spherical">
+                                <i class="fas fa-circle"></i> Sphérique
+                            </div>
+                            <div class="model-btn" data-model="exponential">
+                                <i class="fas fa-chart-line"></i> Exponentiel
+                            </div>
+                            <div class="model-btn" data-model="gaussian">
+                                <i class="fas fa-bell-curve"></i> Gaussien
+                            </div>
+                            <div class="model-btn" data-model="power">
+                                <i class="fas fa-superscript"></i> Puissance
+                            </div>
+                        </div>
+                        
+                        <div class="toggle-control">
+                            <label class="switch">
+                                <input type="checkbox" id="auto-update-model" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <label for="auto-update-model">Mise à jour automatique</label>
+                        </div>
+                    </div>
+                    
+                    <div id="model-plot" class="plot-container"></div>
+                    
+                    <div class="model-controls">
+                        <div class="form-group range-container">
+                            <label for="nugget-slider">Effet pépite</label>
+                            <input type="range" id="nugget-slider" min="0" max="100" value="10" step="1">
+                            <span class="range-value" id="nugget-value">10</span>
+                        </div>
+                        
+                        <div class="form-group range-container">
+                            <label for="sill-slider">Palier</label>
+                            <input type="range" id="sill-slider" min="0" max="100" value="90" step="1">
+                            <span class="range-value" id="sill-value">90</span>
+                        </div>
+                        
+                        <div class="form-group range-container">
+                            <label for="range-slider">Portée</label>
+                            <input type="range" id="range-slider" min="1" max="200" value="50" step="1">
+                            <span class="range-value" id="range-value">50</span>
+                        </div>
+                        
+                        <div class="form-group range-container" id="power-container" style="display: none;">
+                            <label for="power-slider">Exposant</label>
+                            <input type="range" id="power-slider" min="0.1" max="2" value="1.5" step="0.1">
+                            <span class="range-value" id="power-value">1.5</span>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group" style="margin-top: 16px;">
+                        <button id="update-model-btn" class="btn btn-primary">
+                            <i class="fas fa-sync-alt"></i> Mettre à jour
+                        </button>
+                        <button id="save-model-btn" class="btn btn-success">
+                            <i class="fas fa-save"></i> Sauvegarder le modèle
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Variables globales
+        let data = [];
+        let filteredData = [];
+        let columnNames = [];
+        let variogramData = null;
+        let currentModelType = 'spherical';
+        let domains = [];
+        let activeFilters = [];
+        let colorScale = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"];
+        
+        // Sélecteurs DOM
+        const fileInput = document.getElementById('file-input');
+        const dataPreview = document.getElementById('data-preview');
+        const xColumnSelect = document.getElementById('x-column');
+        const yColumnSelect = document.getElementById('y-column');
+        const zColumnSelect = document.getElementById('z-column');
+        const valueColumnSelect = document.getElementById('value-column');
+        const domainColumnSelect = document.getElementById('domain-column');
+        const filterColumnSelect = document.getElementById('filter-column');
+        const calculateBtn = document.getElementById('calculate-btn');
+        const logContainer = document.getElementById('log');
+        const domainFiltersContainer = document.getElementById('domain-filters');
+        const domainList = document.getElementById('domain-list');
+        const domainLegend = document.getElementById('domain-legend');
+        
+        // Sélecteurs des onglets
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // Filtres
+        const minValueFilter = document.getElementById('min-value-filter');
+        const maxValueFilter = document.getElementById('max-value-filter');
+        const quickFilterButton = document.getElementById('quick-filter-button');
+        const filterOperator = document.getElementById('filter-operator');
+        const filterValue = document.getElementById('filter-value');
+        const filterValue2 = document.getElementById('filter-value2');
+        const filterValue2Container = document.getElementById('filter-value2-container');
+        const addFilterBtn = document.getElementById('add-filter-btn');
+        const applyFiltersBtn = document.getElementById('apply-filters-btn');
+        const activeFiltersContainer = document.getElementById('active-filters');
+        const noFiltersMessage = document.getElementById('no-filters-message');
+        
+        // Modèle de variogramme
+        const nuggetSlider = document.getElementById('nugget-slider');
+        const sillSlider = document.getElementById('sill-slider');
+        const rangeSlider = document.getElementById('range-slider');
+        const powerSlider = document.getElementById('power-slider');
+        const nuggetValue = document.getElementById('nugget-value');
+        const sillValue = document.getElementById('sill-value');
+        const rangeValue = document.getElementById('range-value');
+        const powerValue = document.getElementById('power-value');
+        const modelBtns = document.querySelectorAll('.model-btn');
+        const autoUpdateModel = document.getElementById('auto-update-model');
+        const updateModelBtn = document.getElementById('update-model-btn');
+        
+        // Variogramme
+        const variogramDirection = document.getElementById('variogram-direction');
+        const normalizedVariogram = document.getElementById('normalized-variogram');
+        const recalculateBtn = document.getElementById('recalculate-btn');
+        
+        // Domaines
+        const showAllDomains = document.getElementById('show-all-domains');
+        const selectAllBtn = document.getElementById('select-all-btn');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+        
+        // Initialisation des onglets
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(tc => tc.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+                
+                // Si on passe à l'onglet filtré, mettre à jour le graphique filtré
+                if (tab.dataset.tab === 'filter-tab') {
+                    plotFilteredData();
+                }
+            });
+        });
+        
+        // Opérateur de filtre
+        filterOperator.addEventListener('change', function() {
+            if (this.value === 'between') {
+                filterValue2Container.style.display = 'block';
+            } else {
+                filterValue2Container.style.display = 'none';
+            }
+        });
+        
+        // Ajout d'un filtre
+        addFilterBtn.addEventListener('click', function() {
+            const column = filterColumnSelect.value;
+            const operator = filterOperator.value;
+            const value = filterValue.value;
+            const value2 = filterValue2.value;
+            
+            if (!column || !value || (operator === 'between' && !value2)) {
+                log('Veuillez remplir tous les champs du filtre');
+                return;
+            }
+            
+            // Créer un nouvel objet filtre
+            const filter = {
+                id: Date.now(), // Utiliser un timestamp comme identifiant unique
+                column: column,
+                operator: operator,
+                value: value,
+                value2: operator === 'between' ? value2 : null
+            };
+            
+            // Ajouter à la liste des filtres actifs
+            activeFilters.push(filter);
+            
+            // Mettre à jour l'affichage des filtres
+            updateActiveFiltersDisplay();
+            
+            // Réinitialiser les champs
+            filterValue.value = '';
+            filterValue2.value = '';
+            
+            log(`Filtre ajouté: ${getFilterDescription(filter)}`);
+        });
+        
+        // Appliquer tous les filtres
+        applyFiltersBtn.addEventListener('click', function() {
+            if (activeFilters.length === 0) {
+                log('Aucun filtre à appliquer');
+                return;
+            }
+            
+            applyFilters();
+            log(`${activeFilters.length} filtres appliqués`);
+            
+            // Changer d'onglet automatiquement
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(tc => tc.classList.remove('active'));
+            document.querySelector('[data-tab="filter-tab"]').classList.add('active');
+            document.getElementById('filter-tab').classList.add('active');
+        });
+        
+        // Filtres rapides
+        quickFilterButton.addEventListener('click', function() {
+            const min = minValueFilter.value ? parseFloat(minValueFilter.value) : null;
+            const max = maxValueFilter.value ? parseFloat(maxValueFilter.value) : null;
+            const valueCol = valueColumnSelect.value;
+            
+            if (!valueCol) {
+                log('Veuillez sélectionner une colonne de valeur');
+                return;
+            }
+            
+            // Réinitialiser les filtres existants
+            activeFilters = [];
+            
+            // Ajouter les nouveaux filtres
+            if (min !== null) {
+                const minFilter = {
+                    id: Date.now(),
+                    column: valueCol,
+                    operator: 'gte',
+                    value: min,
+                    value2: null
+                };
+                activeFilters.push(minFilter);
+            }
+            
+            if (max !== null) {
+                const maxFilter = {
+                    id: Date.now() + 1,
+                    column: valueCol,
+                    operator: 'lte',
+                    value: max,
+                    value2: null
+                };
+                activeFilters.push(maxFilter);
+            }
+            
+            // Mettre à jour l'affichage des filtres
+            updateActiveFiltersDisplay();
+            
+            // Appliquer les filtres
+            applyFilters();
+            
+            log(`Filtres rapides appliqués: ${min !== null ? 'Min=' + min : ''} ${max !== null ? 'Max=' + max : ''}`);
+        });
+        
+        // Filtres de domaine
+        showAllDomains.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.domain-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+            plot3DScatter();
+        });
+        
+        // Boutons de sélection de domaine
+        selectAllBtn.addEventListener('click', function() {
+            const checkboxes = document.querySelectorAll('.domain-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = true;
+            });
+            showAllDomains.checked = true;
+            plot3DScatter();
+        });
+        
+        clearAllBtn.addEventListener('click', function() {
+            const checkboxes = document.querySelectorAll('.domain-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+            });
+            showAllDomains.checked = false;
+            plot3DScatter();
+        });
+        
+        // Direction prédéfinie du variogramme
+        variogramDirection.addEventListener('change', function() {
+            const direction = this.value;
+            
+            if (direction !== 'custom') {
+                // Définir les valeurs en fonction de la direction
+                switch(direction) {
+                    case 'x':
+                        document.getElementById('azimuth').value = 90;
+                        document.getElementById('dip').value = 0;
+                        break;
+                    case 'y':
+                        document.getElementById('azimuth').value = 0;
+                        document.getElementById('dip').value = 0;
+                        break;
+                    case 'z':
+                        document.getElementById('azimuth').value = 0;
+                        document.getElementById('dip').value = 90;
+                        break;
+                    case 'xy45':
+                        document.getElementById('azimuth').value = 45;
+                        document.getElementById('dip').value = 0;
+                        break;
+                    case 'xy-45':
+                        document.getElementById('azimuth').value = 315;
+                        document.getElementById('dip').value = 0;
+                        break;
+                }
+            }
+        });
+        
+        // Recalculer le variogramme
+        recalculateBtn.addEventListener('click', function() {
+            if (!variogramData) {
+                log('Calculez d\'abord un variogramme');
+                return;
+            }
+            
+            calculateBtn.click();
+        });
+        
+        // Gestion du chargement de fichier
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const csvData = event.target.result;
+                    parseCSV(csvData);
+                    log('Fichier chargé avec succès');
+                } catch (error) {
+                    log('Erreur lors du chargement du fichier: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+        
+        // Sélection du modèle de variogramme
+        modelBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                modelBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentModelType = btn.dataset.model;
+                
+                // Afficher/masquer le contrôle de puissance pour le modèle power
+                if (currentModelType === 'power') {
+                    document.getElementById('power-container').style.display = 'block';
+                } else {
+                    document.getElementById('power-container').style.display = 'none';
+                }
+                
+                if (autoUpdateModel.checked) {
+                    updateModelPlot();
+                }
+            });
+        });
+        
+        // Mise à jour manuelle du modèle
+        updateModelBtn.addEventListener('click', function() {
+            updateModelPlot();
+        });
+        
+        // Sliders du modèle
+        [nuggetSlider, sillSlider, rangeSlider, powerSlider].forEach(slider => {
+            slider.addEventListener('input', function() {
+                updateModelValue(this.id, this.value);
+                
+                if (autoUpdateModel.checked) {
+                    updateModelPlot();
+                }
+            });
+        });
+        
+        // Mise à jour des valeurs affichées des sliders
+        function updateModelValue(sliderId, value) {
+            switch (sliderId) {
+                case 'nugget-slider':
+                    nuggetValue.textContent = value;
+                    break;
+                case 'sill-slider':
+                    sillValue.textContent = value;
+                    break;
+                case 'range-slider':
+                    rangeValue.textContent = value;
+                    break;
+                case 'power-slider':
+                    powerValue.textContent = value;
+                    break;
+            }
+        }
+        
+        // Calcul du variogramme
+        calculateBtn.addEventListener('click', function() {
+            try {
+                if (data.length === 0) {
+                    throw new Error('Aucune donnée chargée');
+                }
+                
+                // Utiliser les données filtrées si des filtres sont appliqués
+                const dataToUse = filteredData.length > 0 ? filteredData : data;
+                
+                const xCol = xColumnSelect.value;
+                const yCol = yColumnSelect.value;
+                const zCol = zColumnSelect.value;
+                const valueCol = valueColumnSelect.value;
+                
+                if (!xCol || !yCol || !zCol || !valueCol) {
+                    throw new Error('Veuillez sélectionner toutes les colonnes nécessaires');
+                }
+                
+                const lagDistance = parseFloat(document.getElementById('lag-distance').value);
+                const numLags = parseInt(document.getElementById('num-lags').value);
+                const azimuth = parseFloat(document.getElementById('azimuth').value);
+                const dip = parseFloat(document.getElementById('dip').value);
+                const tolerance = parseFloat(document.getElementById('tolerance').value);
+                const bandwidth = parseFloat(document.getElementById('bandwidth').value);
+                
+                log('Calcul du variogramme...');
+                
+                // Calcul du variogramme expérimental
+                variogramData = calculateExperimentalVariogram(
+                    dataToUse, xCol, yCol, zCol, valueCol, 
+                    lagDistance, numLags, azimuth, dip, tolerance, bandwidth
+                );
+                
+                log('Variogramme calculé avec succès');
+                
+                // Mise à jour des graphiques
+                plotVariogram();
+                updateModelPlot();
+                
+                // Changer d'onglet automatiquement
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(tc => tc.classList.remove('active'));
+                document.querySelector('[data-tab="variogram-tab"]').classList.add('active');
+                document.getElementById('variogram-tab').classList.add('active');
+                
+            } catch (error) {
+                log('Erreur lors du calcul du variogramme: ' + error.message);
+            }
+        });
+        
+        // Fonction pour analyser le CSV
+        function parseCSV(csv) {
+            const lines = csv.split('\n');
+            if (lines.length < 2) {
+                throw new Error('Le fichier CSV doit contenir au moins un en-tête et une ligne de données');
+            }
+            
+            // Analyser l'en-tête
+            const header = lines[0].split(',').map(h => h.trim());
+            columnNames = header;
+            
+            // Analyser les données
+            data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line) {
+                    const values = line.split(',').map(v => v.trim());
+                    if (values.length === header.length) {
+                        const row = {};
+                        header.forEach((col, index) => {
+                            row[col] = isNaN(values[index]) ? values[index] : parseFloat(values[index]);
+                        });
+                        data.push(row);
+                    }
+                }
+            }
+            
+            // Réinitialiser les données filtrées
+            filteredData = [];
+            activeFilters = [];
+            
+            // Mettre à jour l'aperçu des données
+            updateDataPreview();
+            
+            // Remplir les sélecteurs de colonnes
+            populateColumnSelectors();
+            
+            // Initialiser l'affichage
+            plot3DScatter();
+            updateStats();
+            
+            // Activer le bouton de calcul
+            calculateBtn.disabled = false;
+        }
+        
+        // Mettre à jour l'aperçu des données
+        function updateDataPreview() {
+            if (data.length === 0) {
+                dataPreview.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-table"></i>
+                        <p>Aucune donnée chargée.</p>
+                        <button class="btn btn-sm btn-secondary">
+                            <i class="fas fa-upload"></i> Charger un exemple
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Afficher les 5 premières lignes
+            let preview = '';
+            const headers = Object.keys(data[0]).join(', ');
+            preview += headers + '\n';
+            
+            for (let i = 0; i < Math.min(5, data.length); i++) {
+                const values = Object.values(data[i]).join(', ');
+                preview += values + '\n';
+            }
+            
+            if (data.length > 5) {
+                preview += `...et ${data.length - 5} autres lignes`;
+            }
+            
+            dataPreview.innerHTML = `<pre>${preview}</pre>`;
+        }
+        
+        // Remplir les sélecteurs de colonnes
+        function populateColumnSelectors() {
+            [xColumnSelect, yColumnSelect, zColumnSelect, valueColumnSelect, domainColumnSelect, filterColumnSelect].forEach(select => {
+                select.innerHTML = '';
+                select.disabled = false;
+                
+                // Option vide
+                const emptyOption = document.createElement('option');
+                emptyOption.value = '';
+                emptyOption.textContent = select === domainColumnSelect ? 'Aucune' : 'Sélectionner...';
+                select.appendChild(emptyOption);
+                
+                // Options de colonnes
+                columnNames.forEach(col => {
+                    const option = document.createElement('option');
+                    option.value = col;
+                    option.textContent = col;
+                    select.appendChild(option);
+                });
+            });
+            
+            // Essayez de deviner automatiquement les colonnes
+            columnNames.forEach(col => {
+                const colLower = col.toLowerCase();
+                if (colLower === 'x' || colLower.includes('east')) {
+                    xColumnSelect.value = col;
+                } else if (colLower === 'y' || colLower.includes('north')) {
+                    yColumnSelect.value = col;
+                } else if (colLower === 'z' || colLower.includes('elev')) {
+                    zColumnSelect.value = col;
+                } else if (colLower.includes('grade') || colLower.includes('teneur') || colLower.includes('val')) {
+                    valueColumnSelect.value = col;
+                } else if (colLower.includes('domain') || colLower.includes('litho') || colLower.includes('zone') || colLower.includes('cat')) {
+                    domainColumnSelect.value = col;
+                    identifyDomains(col);
+                }
+            });
+        }
+        
+        // Identifier les domaines uniques
+        function identifyDomains(domainColumn) {
+            if (!domainColumn || data.length === 0) {
+                domainFiltersContainer.style.display = 'none';
+                domainLegend.style.display = 'none';
+                return;
+            }
+            
+            // Récupérer les valeurs uniques
+            const uniqueDomains = [...new Set(data.map(d => d[domainColumn]))];
+            domains = uniqueDomains.map((domain, index) => ({
+                name: domain,
+                color: colorScale[index % colorScale.length],
+                selected: true
+            }));
+            
+            // Afficher les filtres de domaine
+            populateDomainFilters();
+            domainFiltersContainer.style.display = 'block';
+            
+            // Créer la légende des couleurs
+            updateDomainLegend();
+        }
+        
+        // Peupler les filtres de domaine
+        function populateDomainFilters() {
+            domainList.innerHTML = '';
+            
+            domains.forEach((domain, index) => {
+                const item = document.createElement('div');
+                item.className = 'domain-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'domain-checkbox';
+                checkbox.checked = domain.selected;
+                checkbox.dataset.domain = domain.name;
+                checkbox.addEventListener('change', function() {
+                    domain.selected = this.checked;
+                    showAllDomains.checked = domains.every(d => d.selected);
+                    plot3DScatter();
+                });
+                
+                const colorBox = document.createElement('div');
+                colorBox.className = 'domain-color';
+                colorBox.style.backgroundColor = domain.color;
+                
+                const label = document.createElement('span');
+                label.textContent = domain.name;
+                
+                item.appendChild(checkbox);
+                item.appendChild(colorBox);
+                item.appendChild(label);
+                domainList.appendChild(item);
+            });
+        }
+        
+        // Mettre à jour la légende des domaines
+        function updateDomainLegend() {
+            if (domains.length === 0) {
+                domainLegend.style.display = 'none';
+                return;
+            }
+            
+            domainLegend.innerHTML = '';
+            
+            domains.forEach(domain => {
+                if (domain.selected) {
+                    const item = document.createElement('div');
+                    item.className = 'color-item';
+                    
+                    const square = document.createElement('div');
+                    square.className = 'color-square';
+                    square.style.backgroundColor = domain.color;
+                    
+                    const label = document.createElement('span');
+                    label.textContent = domain.name;
+                    
+                    item.appendChild(square);
+                    item.appendChild(label);
+                    domainLegend.appendChild(item);
+                }
+            });
+            
+            domainLegend.style.display = 'flex';
+        }
+        
+        // Appliquer les filtres
+        function applyFilters() {
+            if (activeFilters.length === 0) {
+                filteredData = [];
+                plotFilteredData();
+                return;
+            }
+            
+            filteredData = data.filter(item => {
+                // L'élément doit passer tous les filtres
+                return activeFilters.every(filter => {
+                    return evaluateFilter(item, filter);
+                });
+            });
+            
+            plotFilteredData();
+            updateStats(filteredData);
+            
+            log(`${filteredData.length} points après filtrage (${data.length - filteredData.length} exclus)`);
+        }
+        
+        // Évaluer un filtre sur un élément
+        function evaluateFilter(item, filter) {
+            const value = item[filter.column];
+            
+            switch (filter.operator) {
+                case 'eq':
+                    return value == filter.value;
+                case 'neq':
+                    return value != filter.value;
+                case 'gt':
+                    return parseFloat(value) > parseFloat(filter.value);
+                case 'gte':
+                    return parseFloat(value) >= parseFloat(filter.value);
+                case 'lt':
+                    return parseFloat(value) < parseFloat(filter.value);
+                case 'lte':
+                    return parseFloat(value) <= parseFloat(filter.value);
+                case 'between':
+                    return parseFloat(value) >= parseFloat(filter.value) && 
+                           parseFloat(value) <= parseFloat(filter.value2);
+                case 'contains':
+                    return value.toString().toLowerCase().includes(filter.value.toLowerCase());
+                default:
+                    return true;
+            }
+        }
+        
+        // Mettre à jour l'affichage des filtres actifs
+        function updateActiveFiltersDisplay() {
+            if (activeFilters.length === 0) {
+                noFiltersMessage.style.display = 'block';
+                return;
+            }
+            
+            noFiltersMessage.style.display = 'none';
+            activeFiltersContainer.innerHTML = '';
+            
+            activeFilters.forEach(filter => {
+                const tag = document.createElement('div');
+                tag.className = 'filter-tag';
+                tag.innerHTML = `${getFilterDescription(filter)} <span class="remove" data-id="${filter.id}">×</span>`;
+                
+                const removeBtn = tag.querySelector('.remove');
+                removeBtn.addEventListener('click', function() {
+                    const filterId = parseInt(this.dataset.id);
+                    removeFilter(filterId);
+                });
+                
+                activeFiltersContainer.appendChild(tag);
+            });
+        }
+        
+        // Obtenir une description textuelle d'un filtre
+        function getFilterDescription(filter) {
+            let operatorText;
+            
+            switch (filter.operator) {
+                case 'eq': operatorText = '='; break;
+                case 'neq': operatorText = '≠'; break;
+                case 'gt': operatorText = '>'; break;
+                case 'gte': operatorText = '≥'; break;
+                case 'lt': operatorText = '<'; break;
+                case 'lte': operatorText = '≤'; break;
+                case 'between': operatorText = 'entre'; break;
+                case 'contains': operatorText = 'contient'; break;
+                default: operatorText = filter.operator;
+            }
+            
+            if (filter.operator === 'between') {
+                return `${filter.column} ${operatorText} ${filter.value} et ${filter.value2}`;
+            } else {
+                return `${filter.column} ${operatorText} ${filter.value}`;
+            }
+        }
+        
+        // Supprimer un filtre
+        function removeFilter(filterId) {
+            activeFilters = activeFilters.filter(f => f.id !== filterId);
+            updateActiveFiltersDisplay();
+            log('Filtre supprimé');
+        }
+        
+        // Fonction pour afficher les données en 3D
+        function plot3DScatter() {
+            if (data.length === 0) return;
+            
+            const xCol = xColumnSelect.value || Object.keys(data[0])[0];
+            const yCol = yColumnSelect.value || Object.keys(data[0])[1];
+            const zCol = zColumnSelect.value || Object.keys(data[0])[2];
+            const valueCol = valueColumnSelect.value || Object.keys(data[0])[3];
+            const domainCol = domainColumnSelect.value;
+            
+            let traces = [];
+            
+            if (domainCol && domains.length > 0) {
+                // Créer une trace pour chaque domaine sélectionné
+                domains.forEach(domain => {
+                    if (domain.selected) {
+                        const domainData = data.filter(d => d[domainCol] === domain.name);
+                        
+                        if (domainData.length > 0) {
+                            const trace = {
+                                x: domainData.map(d => d[xCol]),
+                                y: domainData.map(d => d[yCol]),
+                                z: domainData.map(d => d[zCol]),
+                                mode: 'markers',
+                                marker: {
+                                    size: 4,
+                                    color: domain.color,
+                                    opacity: 0.8
+                                },
+                                type: 'scatter3d',
+                                name: domain.name,
+                                hovertemplate: `${xCol}: %{x}<br>${yCol}: %{y}<br>${zCol}: %{z}<br>${valueCol}: %{text}<br>${domainCol}: ${domain.name}<extra></extra>`,
+                                text: domainData.map(d => d[valueCol])
+                            };
+                            traces.push(trace);
+                        }
+                    }
+                });
+                
+                updateDomainLegend();
+            } else {
+                // Créer une seule trace avec coloration selon les valeurs
+                const trace = {
+                    x: data.map(d => d[xCol]),
+                    y: data.map(d => d[yCol]),
+                    z: data.map(d => d[zCol]),
+                    mode: 'markers',
+                    marker: {
+                        size: 4,
+                        color: data.map(d => d[valueCol]),
+                        colorscale: 'Viridis',
+                        colorbar: {
+                            title: valueCol
+                        },
+                        opacity: 0.8
+                    },
+                    type: 'scatter3d',
+                    hovertemplate: `${xCol}: %{x}<br>${yCol}: %{y}<br>${zCol}: %{z}<br>${valueCol}: %{marker.color}<extra></extra>`
+                };
+                traces.push(trace);
+            }
+            
+            const layout = {
+                title: 'Visualisation 3D des données',
+                scene: {
+                    xaxis: { title: xCol },
+                    yaxis: { title: yCol },
+                    zaxis: { title: zCol },
+                    aspectmode: 'data'
+                },
+                margin: { l: 0, r: 0, b: 0, t: 30 },
+                showlegend: domainCol && domains.length > 0
+            };
+            
+            Plotly.newPlot('data-plot', traces, layout);
+        }
+        
+        // Fonction pour afficher les données filtrées
+        function plotFilteredData() {
+            if (data.length === 0) return;
+            
+            const dataToUse = filteredData.length > 0 ? filteredData : data;
+            
+            const xCol = xColumnSelect.value || Object.keys(data[0])[0];
+            const yCol = yColumnSelect.value || Object.keys(data[0])[1];
+            const zCol = zColumnSelect.value || Object.keys(data[0])[2];
+            const valueCol = valueColumnSelect.value || Object.keys(data[0])[3];
+            const domainCol = domainColumnSelect.value;
+            
+            let traces = [];
+            
+            if (domainCol && domains.length > 0) {
+                // Créer une trace pour chaque domaine sélectionné
+                domains.forEach(domain => {
+                    if (domain.selected) {
+                        const domainData = dataToUse.filter(d => d[domainCol] === domain.name);
+                        
+                        if (domainData.length > 0) {
+                            const trace = {
+                                x: domainData.map(d => d[xCol]),
+                                y: domainData.map(d => d[yCol]),
+                                z: domainData.map(d => d[zCol]),
+                                mode: 'markers',
+                                marker: {
+                                    size: 4,
+                                    color: domain.color,
+                                    opacity: 0.8
+                                },
+                                type: 'scatter3d',
+                                name: domain.name,
+                                hovertemplate: `${xCol}: %{x}<br>${yCol}: %{y}<br>${zCol}: %{z}<br>${valueCol}: %{text}<br>${domainCol}: ${domain.name}<extra></extra>`,
+                                text: domainData.map(d => d[valueCol])
+                            };
+                            traces.push(trace);
+                        }
+                    }
+                });
+            } else {
+                // Créer une seule trace avec coloration selon les valeurs
+                const trace = {
+                    x: dataToUse.map(d => d[xCol]),
+                    y: dataToUse.map(d => d[yCol]),
+                    z: dataToUse.map(d => d[zCol]),
+                    mode: 'markers',
+                    marker: {
+                        size: 4,
+                        color: dataToUse.map(d => d[valueCol]),
+                        colorscale: 'Viridis',
+                        colorbar: {
+                            title: valueCol
+                        },
+                        opacity: 0.8
+                    },
+                    type: 'scatter3d',
+                    hovertemplate: `${xCol}: %{x}<br>${yCol}: %{y}<br>${zCol}: %{z}<br>${valueCol}: %{marker.color}<extra></extra>`
+                };
+                traces.push(trace);
+            }
+            
+            const layout = {
+                title: 'Données filtrées',
+                scene: {
+                    xaxis: { title: xCol },
+                    yaxis: { title: yCol },
+                    zaxis: { title: zCol },
+                    aspectmode: 'data'
+                },
+                margin: { l: 0, r: 0, b: 0, t: 30 },
+                showlegend: domainCol && domains.length > 0
+            };
+            
+            Plotly.newPlot('filtered-data-plot', traces, layout);
+        }
+        
+        // Mise à jour des statistiques
+        function updateStats(dataSet) {
+            if (!dataSet) dataSet = data;
+            if (dataSet.length === 0 || !valueColumnSelect.value) return;
+            
+            const valueCol = valueColumnSelect.value;
+            const values = dataSet.map(d => d[valueCol]).filter(v => !isNaN(v));
+            
+            if (values.length === 0) return;
+            
+            const count = values.length;
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const sum = values.reduce((a, b) => a + b, 0);
+            const mean = sum / count;
+            
+            // Calcul de la variance
+            const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / count;
+            
+            // Mise à jour des éléments
+            document.getElementById('stat-count').textContent = count;
+            document.getElementById('stat-min').textContent = min.toFixed(3);
+            document.getElementById('stat-max').textContent = max.toFixed(3);
+            document.getElementById('stat-mean').textContent = mean.toFixed(3);
+            document.getElementById('stat-variance').textContent = variance.toFixed(3);
+        }
+        
+        // Fonction pour calculer le variogramme expérimental
+        function calculateExperimentalVariogram(data, xCol, yCol, zCol, valueCol, lagDistance, numLags, azimuth, dip, tolerance, bandwidth) {
+            // Conversion des angles en radians
+            const azimuthRad = (azimuth * Math.PI) / 180;
+            const dipRad = (dip * Math.PI) / 180;
+            const toleranceRad = (tolerance * Math.PI) / 180;
+            
+            // Calcul des vecteurs de direction
+            const dx = Math.cos(azimuthRad) * Math.cos(dipRad);
+            const dy = Math.sin(azimuthRad) * Math.cos(dipRad);
+            const dz = Math.sin(dipRad);
+            
+            // Structure pour stocker les résultats
+            const variogram = {
+                distances: [],
+                variances: [],
+                pairs: [],
+                direction: { azimuth, dip },
+                lagParams: { lagDistance, numLags, tolerance, bandwidth }
+            };
+            
+            // Initialisation des compteurs pour chaque lag
+            for (let lag = 0; lag < numLags; lag++) {
+                variogram.distances.push((lag + 0.5) * lagDistance);
+                variogram.variances.push(0);
+                variogram.pairs.push(0);
+            }
+            
+            // Calcul de la variance totale (pour normalisation)
+            const values = data.map(d => d[valueCol]);
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            const totalVariance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
+            
+            // Parcourir toutes les paires de points
+            for (let i = 0; i < data.length; i++) {
+                for (let j = i + 1; j < data.length; j++) {
+                    // Calcul du vecteur entre les points
+                    const hx = data[j][xCol] - data[i][xCol];
+                    const hy = data[j][yCol] - data[i][yCol];
+                    const hz = data[j][zCol] - data[i][zCol];
+                    
+                    // Longueur du vecteur (distance euclidienne)
+                    const distance = Math.sqrt(hx*hx + hy*hy + hz*hz);
+                    
+                    // Projection sur la direction
+                    const proj = hx*dx + hy*dy + hz*dz;
+                    const projDistance = Math.abs(proj);
+                    
+                    // Calcul de l'angle entre le vecteur et la direction
+                    const dotProduct = (hx*dx + hy*dy + hz*dz) / distance;
+                    const angle = Math.acos(Math.min(Math.max(dotProduct, -1), 1));
+                    
+                    // Vérifier si la paire est dans la direction et la tolérance
+                    if (angle <= toleranceRad) {
+                        // Calcul de la distance perpendiculaire (bande passante)
+                        const perpDistance = Math.sqrt(distance*distance - proj*proj);
+                        
+                        if (perpDistance <= bandwidth) {
+                            // Déterminer le lag
+                            const lagIndex = Math.floor(projDistance / lagDistance);
+                            
+                            if (lagIndex < numLags) {
+                                // Calcul de la semi-variance
+                                const value1 = data[i][valueCol];
+                                const value2 = data[j][valueCol];
+                                const semiVariance = Math.pow(value1 - value2, 2) / 2;
+                                
+                                // Ajouter au variogramme
+                                variogram.variances[lagIndex] += semiVariance;
+                                variogram.pairs[lagIndex]++;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Calcul des moyennes et normalisation
+            for (let i = 0; i < numLags; i++) {
+                if (variogram.pairs[i] > 0) {
+                    variogram.variances[i] /= variogram.pairs[i];
+                } else {
+                    variogram.variances[i] = NaN;
+                }
+            }
+            
+            // Ajouter la variance totale
+            variogram.totalVariance = totalVariance;
+            
+            return variogram;
+        }
+        
+        // Fonction pour tracer le variogramme expérimental
+        function plotVariogram() {
+            if (!variogramData) return;
+            
+            // Filtrer les points sans paires
+            const validIndices = variogramData.pairs.map((p, i) => p > 0 ? i : -1).filter(i => i >= 0);
+            const distances = validIndices.map(i => variogramData.distances[i]);
+            const variances = validIndices.map(i => variogramData.variances[i]);
+            const pairs = validIndices.map(i => variogramData.pairs[i]);
+            
+            // Normalisation éventuelle
+            let yValues = [...variances];
+            let yAxisTitle = 'Semi-variance';
+            let yMax = variogramData.totalVariance * 1.2;
+            
+            const normType = normalizedVariogram.value;
+            if (normType === 'total') {
+                yValues = variances.map(v => v / variogramData.totalVariance);
+                yAxisTitle = 'Semi-variance normalisée (γ/σ²)';
+                yMax = 1.2;
+            } else if (normType === 'sill' && variances.length > 0) {
+                const maxVariance = Math.max(...variances);
+                yValues = variances.map(v => v / maxVariance);
+                yAxisTitle = 'Semi-variance normalisée (γ/C)';
+                yMax = 1.2;
+            }
+            
+            // Trace pour le variogramme
+            const trace = {
+                x: distances,
+                y: yValues,
+                mode: 'markers+lines',
+                marker: {
+                    size: pairs.map(p => Math.max(5, Math.min(15, Math.sqrt(p)))),
+                    color: pairs,
+                    colorscale: 'Viridis',
+                    colorbar: {
+                        title: 'Nombre de paires'
+                    }
+                },
+                line: {
+                    dash: 'dot',
+                    width: 1
+                },
+                name: 'Variogramme expérimental'
+            };
+            
+            // Ligne horizontale pour la variance totale
+            let varianceLineY;
+            if (normType === 'total' || normType === 'sill') {
+                varianceLineY = 1;
+            } else {
+                varianceLineY = variogramData.totalVariance;
+            }
+            
+            const varianceLine = {
+                x: [0, Math.max(...distances) * 1.1],
+                y: [varianceLineY, varianceLineY],
+                mode: 'lines',
+                line: {
+                    dash: 'dash',
+                    width: 1,
+                    color: 'red'
+                },
+                name: 'Variance totale'
+            };
+            
+            const layout = {
+                title: `Variogramme Expérimental (Azimut: ${variogramData.direction.azimuth}°, Plongement: ${variogramData.direction.dip}°)`,
+                xaxis: { 
+                    title: 'Distance (m)',
+                    range: [0, Math.max(...distances) * 1.1]
+                },
+                yaxis: { 
+                    title: yAxisTitle,
+                    range: [0, yMax]
+                },
+                legend: {
+                    x: 0.7,
+                    y: 0.1
+                }
+            };
+            
+            Plotly.newPlot('variogram-plot', [trace, varianceLine], layout);
+        }
+        
+        // Fonction pour mettre à jour le graphique du modèle
+        function updateModelPlot() {
+            if (!variogramData) return;
+            
+            // Filtrer les points sans paires
+            const validIndices = variogramData.pairs.map((p, i) => p > 0 ? i : -1).filter(i => i >= 0);
+            const distances = validIndices.map(i => variogramData.distances[i]);
+            const variances = validIndices.map(i => variogramData.variances[i]);
+            const pairs = validIndices.map(i => variogramData.pairs[i]);
+            
+            // Normalisation éventuelle
+            let yValues = [...variances];
+            let yAxisTitle = 'Semi-variance';
+            let yMax = variogramData.totalVariance * 1.2;
+            let totalVarianceValue = variogramData.totalVariance;
+            
+            const normType = normalizedVariogram.value;
+            if (normType === 'total') {
+                yValues = variances.map(v => v / variogramData.totalVariance);
+                yAxisTitle = 'Semi-variance normalisée (γ/σ²)';
+                yMax = 1.2;
+                totalVarianceValue = 1;
+            } else if (normType === 'sill' && variances.length > 0) {
+                const maxVariance = Math.max(...variances);
+                yValues = variances.map(v => v / maxVariance);
+                yAxisTitle = 'Semi-variance normalisée (γ/C)';
+                yMax = 1.2;
+                totalVarianceValue = 1;
+            }
+            
+            // Trace pour le variogramme expérimental
+            const experimentalTrace = {
+                x: distances,
+                y: yValues,
+                mode: 'markers',
+                marker: {
+                    size: pairs.map(p => Math.max(5, Math.min(15, Math.sqrt(p)))),
+                    color: pairs,
+                    colorscale: 'Viridis',
+                    colorbar: {
+                        title: 'Nombre de paires'
+                    }
+                },
+                name: 'Variogramme expérimental'
+            };
+            
+            // Paramètres du modèle
+            const nugget = parseFloat(nuggetSlider.value) / 100 * totalVarianceValue;
+            const sill = parseFloat(sillSlider.value) / 100 * totalVarianceValue;
+            const range = parseFloat(rangeSlider.value);
+            const power = parseFloat(powerSlider.value);
+            
+            // Générer des points pour le modèle
+            const modelX = [];
+            const maxDistance = Math.max(...distances) * 1.1;
+            const step = maxDistance / 100;
+            
+            for (let dist = 0; dist <= maxDistance; dist += step) {
+                modelX.push(dist);
+            }
+            
+            const modelY = modelX.map(dist => {
+                return nugget + variogramModel(dist, sill, range, currentModelType, power);
+            });
+            
+            // Trace pour le modèle
+            const modelTrace = {
+                x: modelX,
+                y: modelY,
+                mode: 'lines',
+                line: {
+                    width: 2,
+                    color: 'rgba(255, 0, 0, 0.7)'
+                },
+                name: `Modèle ${currentModelType}`
+            };
+            
+            // Ligne horizontale pour la variance totale
+            const varianceLine = {
+                x: [0, maxDistance],
+                y: [totalVarianceValue, totalVarianceValue],
+                mode: 'lines',
+                line: {
+                    dash: 'dash',
+                    width: 1,
+                    color: 'gray'
+                },
+                name: 'Variance totale'
+            };
+            
+            const layout = {
+                title: 'Modélisation du Variogramme',
+                xaxis: { 
+                    title: 'Distance (m)',
+                    range: [0, maxDistance]
+                },
+                yaxis: { 
+                    title: yAxisTitle,
+                    range: [0, yMax]
+                },
+                legend: {
+                    x: 0.7,
+                    y: 0.1
+                }
+            };
+            
+            Plotly.newPlot('model-plot', [experimentalTrace, modelTrace, varianceLine], layout);
+        }
+        
+        // Fonction pour calculer la valeur du modèle de variogramme
+        function variogramModel(distance, sill, range, type, power) {
+            if (distance === 0) return 0;
+            
+            switch (type) {
+                case 'spherical':
+                    if (distance >= range) return sill;
+                    return sill * (1.5 * (distance / range) - 0.5 * Math.pow(distance / range, 3));
+                    
+                case 'exponential':
+                    return sill * (1 - Math.exp(-3 * distance / range));
+                    
+                case 'gaussian':
+                    return sill * (1 - Math.exp(-3 * Math.pow(distance / range, 2)));
+                    
+                case 'power':
+                    // Le modèle de puissance n'a pas de palier
+                    return sill * Math.pow(distance / range, power);
+                    
+                default:
+                    return 0;
+            }
+        }
+        
+        // Fonction pour ajouter des messages au log
+        function log(message) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            const logMessage = `[${timeString}] ${message}`;
+            
+            logContainer.innerHTML += logMessage + '<br>';
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // Écouter les changements de colonne de domaine
+        domainColumnSelect.addEventListener('change', function() {
+            identifyDomains(this.value);
+            plot3DScatter();
+        });
+        
+        // Initialisation
+        log('Application prête. Veuillez charger un fichier CSV.');
+    </script>
+</body>
+</html>
